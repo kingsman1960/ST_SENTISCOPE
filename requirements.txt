@@ -5,5 +5,4 @@ seaborn
 transformers
 torch
 requests
-nltk.sentiment
 nltk
