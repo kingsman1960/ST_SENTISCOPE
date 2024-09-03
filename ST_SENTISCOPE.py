@@ -93,7 +93,7 @@ def analyze_sentiment_finbert_tone(text):
 st.title("Financial Sector News Sentiment Analysis")
 
 # Get API key from Streamlit secrets
-api_key = st.secrets["api_key"]
+api_key = st.secrets["newsapi"]["api_key"]
 
 # Define sectors
 sectors = ['Banking', 'Technology', 'Healthcare', 'Energy', 'Retail']
