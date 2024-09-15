@@ -8,7 +8,6 @@ import requests
 from nltk.sentiment import SentimentIntensityAnalyzer
 import nltk
 
-
 # Set page configuration
 st.set_page_config(
     page_title="Financial Sector News Sentiment Analysis",
@@ -17,8 +16,8 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# Download NLTK data
 import ssl
-
 try:
     _create_unverified_https_context = ssl._create_unverified_context
 except AttributeError:
@@ -26,7 +25,7 @@ except AttributeError:
 else:
     ssl._create_default_https_context = _create_unverified_https_context
 
-nltk.download('punkt_tab')
+nltk.download('punkt')
 nltk.download('averaged_perceptron_tagger')
 nltk.download('maxent_ne_chunker')
 nltk.download('words')
@@ -35,34 +34,26 @@ nltk.download('words')
 def load_models():
     finbert_tokenizer = AutoTokenizer.from_pretrained("ProsusAI/finbert")
     finbert_model = AutoModelForSequenceClassification.from_pretrained("ProsusAI/finbert")
-    
     esgbert_tokenizer = AutoTokenizer.from_pretrained("nbroad/ESG-BERT")
     esgbert_model = AutoModelForSequenceClassification.from_pretrained("nbroad/ESG-BERT")
-    
     finbert_tone_tokenizer = AutoTokenizer.from_pretrained("yiyanghkust/finbert-tone")
     finbert_tone_model = AutoModelForSequenceClassification.from_pretrained("yiyanghkust/finbert-tone")
-    
     return finbert_tokenizer, finbert_model, esgbert_tokenizer, esgbert_model, finbert_tone_tokenizer, finbert_tone_model
 
 finbert_tokenizer, finbert_model, esgbert_tokenizer, esgbert_model, finbert_tone_tokenizer, finbert_tone_model = load_models()
 
 # List of trusted sources
 trusted_sources = [
-    'reuters.com', 'apnews.com', 'bbc.com', 'npr.org', 'wsj.com', 
+    'reuters.com', 'apnews.com', 'bbc.com', 'npr.org', 'wsj.com',
     'nytimes.com', 'washingtonpost.com', 'economist.com', 'ft.com',
-    'bloomberg.com', 'cnbc.com', 'forbes.com',
-    'finance.yahoo.com'
+    'bloomberg.com', 'cnbc.com', 'forbes.com', 'finance.yahoo.com'
 ]
 
 # Function to fetch financial news from NewsAPI for a specific sector
 def fetch_financial_news(api_key, sector):
-    # Add financial keywords to make the search more specific
     financial_keywords = "finance OR market OR stock OR economy OR investment"
-    
-    # Construct the query with sector, financial keywords, and trusted sources
     query = f"{sector} AND ({financial_keywords})"
     domains = ','.join(trusted_sources)
-    
     url = f"https://newsapi.org/v2/everything?q={query}&domains={domains}&apiKey={api_key}&language=en&sortBy=relevancy&pageSize=10"
     response = requests.get(url)
     data = response.json()
@@ -74,8 +65,8 @@ def analyze_sentiment_finbert(text):
     inputs = finbert_tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512)
     with torch.no_grad():
         outputs = finbert_model(**inputs)
-    probabilities = torch.nn.functional.softmax(outputs.logits, dim=1)
-    sentiment_scores = probabilities[0].tolist()
+        probabilities = torch.nn.functional.softmax(outputs.logits, dim=1)
+        sentiment_scores = probabilities[0].tolist()
     labels = ['Negative', 'Neutral', 'Positive']
     return {label: score for label, score in zip(labels, sentiment_scores)}
 
@@ -87,8 +78,8 @@ def analyze_sentiment_esgbert(text):
     inputs = esgbert_tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512)
     with torch.no_grad():
         outputs = esgbert_model(**inputs)
-    probabilities = torch.nn.functional.softmax(outputs.logits, dim=1)
-    sentiment_scores = probabilities[0].tolist()
+        probabilities = torch.nn.functional.softmax(outputs.logits, dim=1)
+        sentiment_scores = probabilities[0].tolist()
     labels = ['Negative', 'Neutral', 'Positive']
     return {label: score for label, score in zip(labels, sentiment_scores)}
 
@@ -96,8 +87,8 @@ def analyze_sentiment_finbert_tone(text):
     inputs = finbert_tone_tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512)
     with torch.no_grad():
         outputs = finbert_tone_model(**inputs)
-    probabilities = torch.nn.functional.softmax(outputs.logits, dim=1)
-    sentiment_scores = probabilities[0].tolist()
+        probabilities = torch.nn.functional.softmax(outputs.logits, dim=1)
+        sentiment_scores = probabilities[0].tolist()
     labels = ['Negative', 'Neutral', 'Positive']
     return {label: score for label, score in zip(labels, sentiment_scores)}
 
@@ -124,7 +115,6 @@ sectors = ['Banking', 'Technology', 'Healthcare', 'Energy', 'Retail']
 
 # Sector selection
 selected_sector = st.selectbox("Select a business sector to analyze:", sectors)
-
 
 if st.button("Analyze"):
     # Fetch financial news for the selected sector
@@ -186,17 +176,14 @@ if st.button("Analyze"):
         else:
             st.write("No named entities found across all articles.")
 
-        
         # Visualize sentiment distribution for the selected sector
         st.subheader(f"Sentiment Distribution for {selected_sector} Sector")
-
         finbert_sentiments = [analyze_sentiment_finbert(article['description']) for article in news_data]
         vader_sentiments = [analyze_sentiment_vader(article['description'])['compound'] for article in news_data]
         esgbert_sentiments = [analyze_sentiment_esgbert(article['description']) for article in news_data]
         finbert_tone_sentiments = [analyze_sentiment_finbert_tone(article['description']) for article in news_data]
 
         col1, col2 = st.columns(2)
-        
         with col1:
             fig, ax = plt.subplots()
             df = pd.DataFrame(finbert_sentiments)
@@ -225,8 +212,6 @@ if st.button("Analyze"):
             sns.boxplot(x='Sentiment', y='Score', data=df_melted, ax=ax)
             ax.set_title("FinBERT-Tone Sentiment Distribution")
             st.pyplot(fig)
-
-
 
         st.markdown("---")
         st.write("Note: This analysis is based on a sample of recent financial news articles from trusted sources for the selected sector. "
