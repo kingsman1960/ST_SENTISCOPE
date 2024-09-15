@@ -17,12 +17,20 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Download NLTK data
-nltk.download('vader_lexicon', quiet=True)
-nltk.download('punkt')
-nltk.download('averaged_perceptron_tagger')
-nltk.download('maxent_ne_chunker')
-nltk.download('words')
+import os
+
+def download_nltk_data():
+    nltk_data_dir = os.path.join(os.getcwd(), 'nltk_data')
+    if not os.path.exists(nltk_data_dir):
+        os.makedirs(nltk_data_dir)
+    
+    nltk.data.path.append(nltk_data_dir)
+    
+    for resource in ['punkt', 'averaged_perceptron_tagger', 'maxent_ne_chunker', 'words']:
+        if not nltk.data.find(resource):
+            nltk.download(resource, download_dir=nltk_data_dir)
+
+download_nltk_data()
 
 # Load models
 def load_models():
