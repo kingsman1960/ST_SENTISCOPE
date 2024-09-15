@@ -7,8 +7,7 @@ import torch
 import requests
 from nltk.sentiment import SentimentIntensityAnalyzer
 import nltk
-import spacy
-nlp = spacy.load("en_core_web_sm")
+
 
 # Set page configuration
 st.set_page_config(
@@ -20,6 +19,10 @@ st.set_page_config(
 
 # Download NLTK data
 nltk.download('vader_lexicon', quiet=True)
+nltk.download('punkt')
+nltk.download('averaged_perceptron_tagger')
+nltk.download('maxent_ne_chunker')
+nltk.download('words')
 
 # Load models
 def load_models():
@@ -91,10 +94,18 @@ def analyze_sentiment_finbert_tone(text):
     labels = ['Negative', 'Neutral', 'Positive']
     return {label: score for label, score in zip(labels, sentiment_scores)}
 
-def extract_entities(text):
-    doc = nlp(text)
-    entities = [(ent.text, ent.label_) for ent in doc.ents]
+def extract_entities_nltk(text):
+    tokens = nltk.word_tokenize(text)
+    pos_tags = nltk.pos_tag(tokens)
+    tree = nltk.ne_chunk(pos_tags)
+    entities = []
+    for subtree in tree:
+        if isinstance(subtree, nltk.Tree):
+            entity_text = ' '.join([word for word, tag in subtree.leaves()])
+            entity_label = subtree.label()
+            entities.append((entity_text, entity_label))
     return entities
+
 # Streamlit app
 st.title("Financial Sector News Sentiment Analysis")
 
@@ -146,18 +157,16 @@ if st.button("Analyze"):
 
             # Add entity visualization for each article
             st.subheader("Named Entities")
-            entities = extract_entities(article['description'])
+            entities = extract_entities_nltk(article['description'])
             if entities:
                 entity_df = pd.DataFrame(entities, columns=['Entity', 'Label'])
                 st.dataframe(entity_df)
             else:
                 st.write("No named entities found in this article.")
 
-            st.markdown("---")
-
         st.subheader("Top Named Entities Across All Articles")
         all_text = " ".join([article['description'] for article in news_data])
-        all_entities = extract_entities(all_text)
+        all_entities = extract_entities_nltk(all_text)
         if all_entities:
             entity_counts = pd.DataFrame(all_entities, columns=['Entity', 'Label']).groupby(['Entity', 'Label']).size().reset_index(name='Count')
             entity_counts = entity_counts.sort_values('Count', ascending=False).head(10)
@@ -169,8 +178,6 @@ if st.button("Analyze"):
             st.pyplot(fig)
         else:
             st.write("No named entities found across all articles.")
-
-        st.markdown("---")
 
         
         # Visualize sentiment distribution for the selected sector
@@ -212,10 +219,7 @@ if st.button("Analyze"):
             ax.set_title("FinBERT-Tone Sentiment Distribution")
             st.pyplot(fig)
 
-    # Add entity visualization for all articles
-        st.subheader("Entity Visualization for All Articles")
-        all_text = " ".join([article['description'] for article in news_data])
-        visualize_entity_labels(all_text)
+
 
         st.markdown("---")
         st.write("Note: This analysis is based on a sample of recent financial news articles from trusted sources for the selected sector. "
