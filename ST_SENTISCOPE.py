@@ -7,8 +7,7 @@ import torch
 import requests
 from nltk.sentiment import SentimentIntensityAnalyzer
 import nltk
-import ssl
-import os
+
 
 # Set page configuration
 st.set_page_config(
@@ -18,27 +17,20 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-def download_nltk_data():
-    try:
-        _create_unverified_https_context = ssl._create_unverified_context
-    except AttributeError:
-        pass
-    else:
-        ssl._create_default_https_context = _create_unverified_https_context
+import ssl
 
-    nltk_data_dir = os.path.join(os.getcwd(), 'nltk_data')
-    if not os.path.exists(nltk_data_dir):
-        os.makedirs(nltk_data_dir)
-    
-    nltk.data.path.append(nltk_data_dir)
-    
-    resources = ['punkt', 'averaged_perceptron_tagger', 'maxent_ne_chunker', 'words', 'vader_lexicon']
-    for resource in resources:
-        try:
-            nltk.data.find(resource)
-        except LookupError:
-            nltk.download(resource, download_dir=nltk_data_dir, quiet=True)
-download_nltk_data()
+try:
+    _create_unverified_https_context = ssl._create_unverified_context
+except AttributeError:
+    pass
+else:
+    ssl._create_default_https_context = _create_unverified_https_context
+
+nltk.download('punkt_tab')
+nltk.download('averaged_perceptron_tagger')
+nltk.download('maxent_ne_chunker')
+nltk.download('words')
+
 # Load models
 def load_models():
     finbert_tokenizer = AutoTokenizer.from_pretrained("ProsusAI/finbert")
