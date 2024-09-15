@@ -7,11 +7,8 @@ import torch
 import requests
 from nltk.sentiment import SentimentIntensityAnalyzer
 import nltk
-
-import spacy_streamlit
-import random
-
-nlp = en_core_web_sm.load()
+import spacy
+nlp = spacy.load("en_core_web_sm")
 
 # Set page configuration
 st.set_page_config(
@@ -24,13 +21,6 @@ st.set_page_config(
 # Download NLTK data
 nltk.download('vader_lexicon', quiet=True)
 
-
-@st.cache_resource
-def download_en_core_web_sm():
-    subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"])
-
-download_en_core_web_sm()
-import en_core_web_sm
 # Load models
 def load_models():
     finbert_tokenizer = AutoTokenizer.from_pretrained("ProsusAI/finbert")
@@ -101,16 +91,10 @@ def analyze_sentiment_finbert_tone(text):
     labels = ['Negative', 'Neutral', 'Positive']
     return {label: score for label, score in zip(labels, sentiment_scores)}
 
-def visualize_entity_labels(text):
+def extract_entities(text):
     doc = nlp(text)
-    return spacy_streamlit.visualize_ner(
-        doc,
-        labels=nlp.get_pipe("ner").labels,
-        title="Entity Visualization",
-        show_table=False,
-        key=random.randint(0, 100000)
-    )
-
+    entities = [(ent.text, ent.label_) for ent in doc.ents]
+    return entities
 # Streamlit app
 st.title("Financial Sector News Sentiment Analysis")
 
@@ -123,6 +107,7 @@ sectors = ['Banking', 'Technology', 'Healthcare', 'Energy', 'Retail']
 # Sector selection
 selected_sector = st.selectbox("Select a business sector to analyze:", sectors)
 
+
 if st.button("Analyze"):
     # Fetch financial news for the selected sector
     news_data = fetch_financial_news(api_key, selected_sector)
@@ -130,22 +115,23 @@ if st.button("Analyze"):
     if news_data:
         # Display results
         st.subheader(f"Financial News and Sentiment Analysis for {selected_sector} Sector")
+
         for i, article in enumerate(news_data, 1):
             st.write(f"**{i}. {article['title']}**")
             st.write(f"Source: {article['source']['name']}")
-            
+
             # Display image if available
             if article['urlToImage']:
                 st.image(article['urlToImage'], caption=article['title'], use_column_width=True)
-            
+
             st.write(article['description'])
-            
+
             # Perform sentiment analysis on the description
             finbert_sentiment = analyze_sentiment_finbert(article['description'])
             vader_sentiment = analyze_sentiment_vader(article['description'])
             esgbert_sentiment = analyze_sentiment_esgbert(article['description'])
             finbert_tone_sentiment = analyze_sentiment_finbert_tone(article['description'])
-            
+
             col1, col2 = st.columns(2)
             with col1:
                 st.write("FinBERT Sentiment:")
@@ -159,11 +145,34 @@ if st.button("Analyze"):
                 st.write(finbert_tone_sentiment)
 
             # Add entity visualization for each article
-            st.subheader("Entity Visualization")
-            visualize_entity_labels(article['description'])
-            
+            st.subheader("Named Entities")
+            entities = extract_entities(article['description'])
+            if entities:
+                entity_df = pd.DataFrame(entities, columns=['Entity', 'Label'])
+                st.dataframe(entity_df)
+            else:
+                st.write("No named entities found in this article.")
+
             st.markdown("---")
 
+        st.subheader("Top Named Entities Across All Articles")
+        all_text = " ".join([article['description'] for article in news_data])
+        all_entities = extract_entities(all_text)
+        if all_entities:
+            entity_counts = pd.DataFrame(all_entities, columns=['Entity', 'Label']).groupby(['Entity', 'Label']).size().reset_index(name='Count')
+            entity_counts = entity_counts.sort_values('Count', ascending=False).head(10)
+            st.dataframe(entity_counts)
+
+            fig, ax = plt.subplots(figsize=(10, 6))
+            sns.barplot(x='Count', y='Entity', hue='Label', data=entity_counts, ax=ax)
+            ax.set_title("Top 10 Named Entities Across All Articles")
+            st.pyplot(fig)
+        else:
+            st.write("No named entities found across all articles.")
+
+        st.markdown("---")
+
+        
         # Visualize sentiment distribution for the selected sector
         st.subheader(f"Sentiment Distribution for {selected_sector} Sector")
 

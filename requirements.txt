@@ -6,6 +6,5 @@ transformers
 torch
 requests
 nltk
-
-spacy-streamlit
+spacy
 random
