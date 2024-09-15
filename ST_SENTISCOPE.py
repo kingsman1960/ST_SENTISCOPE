@@ -7,7 +7,7 @@ import torch
 import requests
 from nltk.sentiment import SentimentIntensityAnalyzer
 import nltk
-import en_core_web_sm
+
 import spacy_streamlit
 import random
 
@@ -24,6 +24,13 @@ st.set_page_config(
 # Download NLTK data
 nltk.download('vader_lexicon', quiet=True)
 
+
+@st.cache_resource
+def download_en_core_web_sm():
+    subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"])
+
+download_en_core_web_sm()
+import en_core_web_sm
 # Load models
 def load_models():
     finbert_tokenizer = AutoTokenizer.from_pretrained("ProsusAI/finbert")
