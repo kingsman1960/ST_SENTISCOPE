@@ -5,4 +5,4 @@ seaborn
 transformers
 torch
 requests
-nltk
+nltk == 3.8.1
