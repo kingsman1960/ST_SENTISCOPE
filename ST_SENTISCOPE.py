@@ -7,6 +7,11 @@ import torch
 import requests
 from nltk.sentiment import SentimentIntensityAnalyzer
 import nltk
+import en_core_web_sm
+import spacy_streamlit
+import random
+
+nlp = en_core_web_sm.load()
 
 # Set page configuration
 st.set_page_config(
@@ -89,6 +94,16 @@ def analyze_sentiment_finbert_tone(text):
     labels = ['Negative', 'Neutral', 'Positive']
     return {label: score for label, score in zip(labels, sentiment_scores)}
 
+def visualize_entity_labels(text):
+    doc = nlp(text)
+    return spacy_streamlit.visualize_ner(
+        doc,
+        labels=nlp.get_pipe("ner").labels,
+        title="Entity Visualization",
+        show_table=False,
+        key=random.randint(0, 100000)
+    )
+
 # Streamlit app
 st.title("Financial Sector News Sentiment Analysis")
 
@@ -135,6 +150,10 @@ if st.button("Analyze"):
                 st.write(vader_sentiment)
                 st.write("FinBERT-Tone Sentiment:")
                 st.write(finbert_tone_sentiment)
+
+            # Add entity visualization for each article
+            st.subheader("Entity Visualization")
+            visualize_entity_labels(article['description'])
             
             st.markdown("---")
 
@@ -176,6 +195,11 @@ if st.button("Analyze"):
             sns.boxplot(x='Sentiment', y='Score', data=df_melted, ax=ax)
             ax.set_title("FinBERT-Tone Sentiment Distribution")
             st.pyplot(fig)
+
+    # Add entity visualization for all articles
+        st.subheader("Entity Visualization for All Articles")
+        all_text = " ".join([article['description'] for article in news_data])
+        visualize_entity_labels(all_text)
 
         st.markdown("---")
         st.write("Note: This analysis is based on a sample of recent financial news articles from trusted sources for the selected sector. "
