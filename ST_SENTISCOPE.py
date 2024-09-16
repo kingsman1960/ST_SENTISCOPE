@@ -7,7 +7,7 @@ import torch
 import requests
 from nltk.sentiment import SentimentIntensityAnalyzer
 import nltk
-from flair.models import TextClassifier
+from flair.nn import Classifier
 from flair.data import Sentence
 
 
@@ -35,8 +35,8 @@ def load_models():
     esgbert_model = AutoModelForSequenceClassification.from_pretrained("nbroad/ESG-BERT")
     finbert_tone_tokenizer = AutoTokenizer.from_pretrained("yiyanghkust/finbert-tone")
     finbert_tone_model = AutoModelForSequenceClassification.from_pretrained("yiyanghkust/finbert-tone")
-    flair_sentiment_model = TextClassifier.load('en-sentiment')
-    flair_ner_model = TextClassifier.load('ner')
+    flair_sentiment_model = Classifier.load('en-sentiment')
+    flair_ner_model = Classifier.load('ner')
     return finbert_tokenizer, finbert_model, esgbert_tokenizer, esgbert_model, finbert_tone_tokenizer, finbert_tone_model, flair_sentiment_model, flair_ner_model
 
 finbert_tokenizer, finbert_model, esgbert_tokenizer, esgbert_model, finbert_tone_tokenizer, finbert_tone_model, flair_sentiment_model, flair_ner_model = load_models()
