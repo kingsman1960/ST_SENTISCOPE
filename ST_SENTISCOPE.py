@@ -264,8 +264,6 @@ else:
                     st.pyplot(fig)
                 else:
                     st.write("No named entities found by Flair across all articles.")
-            else:
-            st.write("No named entities found across all articles.")
 
             # Visualize sentiment distribution for the selected sector
             st.subheader(f"Sentiment Distribution for {selected_sector} Sector")
