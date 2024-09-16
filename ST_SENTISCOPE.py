@@ -7,6 +7,9 @@ import torch
 import requests
 from nltk.sentiment import SentimentIntensityAnalyzer
 import nltk
+from flair.models import TextClassifier
+from flair.data import Sentence
+
 
 # Download required NLTK data
 nltk.download('vader_lexicon')
@@ -24,6 +27,7 @@ st.set_page_config(
 )
 
 # Load models
+# Load models
 def load_models():
     finbert_tokenizer = AutoTokenizer.from_pretrained("ProsusAI/finbert")
     finbert_model = AutoModelForSequenceClassification.from_pretrained("ProsusAI/finbert")
@@ -31,9 +35,11 @@ def load_models():
     esgbert_model = AutoModelForSequenceClassification.from_pretrained("nbroad/ESG-BERT")
     finbert_tone_tokenizer = AutoTokenizer.from_pretrained("yiyanghkust/finbert-tone")
     finbert_tone_model = AutoModelForSequenceClassification.from_pretrained("yiyanghkust/finbert-tone")
-    return finbert_tokenizer, finbert_model, esgbert_tokenizer, esgbert_model, finbert_tone_tokenizer, finbert_tone_model
+    flair_sentiment_model = TextClassifier.load('en-sentiment')
+    flair_ner_model = TextClassifier.load('ner')
+    return finbert_tokenizer, finbert_model, esgbert_tokenizer, esgbert_model, finbert_tone_tokenizer, finbert_tone_model, flair_sentiment_model, flair_ner_model
 
-finbert_tokenizer, finbert_model, esgbert_tokenizer, esgbert_model, finbert_tone_tokenizer, finbert_tone_model = load_models()
+finbert_tokenizer, finbert_model, esgbert_tokenizer, esgbert_model, finbert_tone_tokenizer, finbert_tone_model, flair_sentiment_model, flair_ner_model = load_models()
 
 # List of trusted sources
 trusted_sources = [
@@ -84,6 +90,18 @@ def analyze_sentiment_finbert_tone(text):
         sentiment_scores = probabilities[0].tolist()
     labels = ['Negative', 'Neutral', 'Positive']
     return {label: score for label, score in zip(labels, sentiment_scores)}
+
+# Add Flair sentiment analysis function
+def analyze_sentiment_flair(text):
+    sentence = Sentence(text)
+    flair_sentiment_model.predict(sentence)
+    return {'sentiment': sentence.labels[0].value, 'score': sentence.labels[0].score}
+
+# Add Flair named entity recognition function
+def extract_entities_flair(text):
+    sentence = Sentence(text)
+    flair_ner_model.predict(sentence)
+    return [(entity.text, entity.tag) for entity in sentence.get_spans('ner')]
 
 def extract_entities_nltk(text):
     tokens = nltk.word_tokenize(text)
@@ -169,7 +187,10 @@ else:
                 esgbert_sentiment = analyze_sentiment_esgbert(article['description'])
                 finbert_tone_sentiment = analyze_sentiment_finbert_tone(article['description'])
 
-                col1, col2 = st.columns(2)
+               # Add Flair sentiment analysis
+                flair_sentiment = analyze_sentiment_flair(article['description'])
+    
+                col1, col2, col3 = st.columns(3)
                 with col1:
                     st.write("FinBERT Sentiment:")
                     st.write(finbert_sentiment)
@@ -180,30 +201,71 @@ else:
                     st.write(vader_sentiment)
                     st.write("FinBERT-Tone Sentiment:")
                     st.write(finbert_tone_sentiment)
+                with col3:
+                    st.write("Flair Sentiment:")
+                    st.write(flair_sentiment)
 
                 # Add entity visualization for each article
                 st.subheader("Named Entities")
-                entities = extract_entities_nltk(article['description'])
-                if entities:
-                    entity_df = pd.DataFrame(entities, columns=['Entity', 'Label'])
-                    st.dataframe(entity_df)
+                entities_nltk = extract_entities_nltk(article['description'])
+                entities_flair = extract_entities_flair(article['description'])
+    
+                if entities_nltk or entities_flair:
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.write("NLTK Named Entities:")
+                if entities_nltk:
+                    entity_df_nltk = pd.DataFrame(entities_nltk, columns=['Entity', 'Label'])
+                    st.dataframe(entity_df_nltk)
                 else:
-                    st.write("No named entities found in this article.")
+                    st.write("No named entities found by NLTK.")
+                with col2:
+                    st.write("Flair Named Entities:")
+                if entities_flair:
+                    entity_df_flair = pd.DataFrame(entities_flair, columns=['Entity', 'Label'])
+                    st.dataframe(entity_df_flair)
+                else:
+                    st.write("No named entities found by Flair.")
+            else:
+                st.write("No named entities found in this article.")
 
+            # Update the "Top Named Entities Across All Articles" section to include Flair entities
             st.subheader("Top Named Entities Across All Articles")
             all_text = " ".join([article['description'] for article in news_data])
-            all_entities = extract_entities_nltk(all_text)
-            if all_entities:
-                entity_counts = pd.DataFrame(all_entities, columns=['Entity', 'Label']).groupby(['Entity', 'Label']).size().reset_index(name='Count')
-                entity_counts = entity_counts.sort_values('Count', ascending=False).head(10)
-                st.dataframe(entity_counts)
+            all_entities_nltk = extract_entities_nltk(all_text)
+            all_entities_flair = extract_entities_flair(all_text)
 
+            if all_entities_nltk or all_entities_flair:
+                col1, col2 = st.columns(2)
+            with col1:
+                st.write("NLTK Named Entities:")
+            if all_entities_nltk:
+                entity_counts_nltk = pd.DataFrame(all_entities_nltk, columns=['Entity', 'Label']).groupby(['Entity', 'Label']).size().reset_index(name='Count')
+                entity_counts_nltk = entity_counts_nltk.sort_values('Count', ascending=False).head(10)
+                st.dataframe(entity_counts_nltk)
+            
                 fig, ax = plt.subplots(figsize=(10, 6))
-                sns.barplot(x='Count', y='Entity', hue='Label', data=entity_counts, ax=ax)
-                ax.set_title("Top 10 Named Entities Across All Articles")
+                sns.barplot(x='Count', y='Entity', hue='Label', data=entity_counts_nltk, ax=ax)
+                ax.set_title("Top 10 NLTK Named Entities Across All Articles")
                 st.pyplot(fig)
             else:
-                st.write("No named entities found across all articles.")
+                st.write("No named entities found by NLTK across all articles.")
+    
+            with col2:
+                st.write("Flair Named Entities:")
+                if all_entities_flair:
+                    entity_counts_flair = pd.DataFrame(all_entities_flair, columns=['Entity', 'Label']).groupby(['Entity', 'Label']).size().reset_index(name='Count')
+                    entity_counts_flair = entity_counts_flair.sort_values('Count', ascending=False).head(10)
+                    st.dataframe(entity_counts_flair)
+            
+                    fig, ax = plt.subplots(figsize=(10, 6))
+                    sns.barplot(x='Count', y='Entity', hue='Label', data=entity_counts_flair, ax=ax)
+                    ax.set_title("Top 10 Flair Named Entities Across All Articles")
+                    st.pyplot(fig)
+                else:
+                    st.write("No named entities found by Flair across all articles.")
+            else:
+            st.write("No named entities found across all articles.")
 
             # Visualize sentiment distribution for the selected sector
             st.subheader(f"Sentiment Distribution for {selected_sector} Sector")
