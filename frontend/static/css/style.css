@@ -20,7 +20,6 @@ body {
 
 header {
     background-color: var(--color-primary);
-    padding: 1rem;
     text-align: center;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
@@ -61,7 +60,7 @@ select, textarea, button {
 }
 
 textarea {
-    height: 150px;
+    height: 100px;
     resize: vertical;
 }
 
@@ -78,6 +77,49 @@ button:hover {
 }
 
 #results {
+    background-color: var(--color-off-white);
+    padding: 1rem;
+    border-radius: 4px;
+    margin-top: 2rem;
+}
+
+.article {
+    margin-bottom: 1.5rem;
+}
+
+.article img {
+    max-width: 100%;
+    height: auto;
+    margin-bottom: 1rem;
+}
+
+.article pre {
+    background-color: #f0f0f0;
+    padding: 0.5rem;
+    border-radius: 4px;
+    overflow-x: auto;
+}
+
+.more-content {
+    display: none;
+    margin-top: 1rem;
+}
+
+.more-button {
+    background-color: #555;
+    color: #fff;
+    padding: 0.3rem 0.6rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.more-button:hover {
+    background-color: #333;
+}
+
+#overall-score {
     background-color: var(--color-off-white);
     padding: 1rem;
     border-radius: 4px;
