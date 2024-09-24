@@ -1,0 +1,143 @@
+:root {
+    --color-primary: #252B33;
+    --color-secondary: #30D9D9;
+    --color-text: #333;
+    --color-background: #f4f7f9;
+    --color-white: #fff;
+    --color-light-gray: #ddd;
+    --color-off-white: #ecf0f1;
+    --color-dark-text: #1a1e21;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    background-color: var(--color-background);
+    color: var(--color-text);
+}
+
+header {
+    background-color: var(--color-primary);
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.logo {
+    max-width: 200px;
+    height: auto;
+}
+
+main {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: var(--color-white);
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+h1, h2 {
+    color: var(--color-dark-text);
+    margin-bottom: 1rem;
+}
+
+p {
+    margin-bottom: 1.5rem;
+}
+
+form {
+    margin-bottom: 2rem;
+}
+
+select, textarea, button {
+    width: 100%;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--color-light-gray);
+    border-radius: 4px;
+}
+
+textarea {
+    height: 100px;
+    resize: vertical;
+}
+
+button {
+    background-color: var(--color-secondary);
+    color: var(--color-white);
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: var(--color-secondary);
+}
+
+#results {
+    background-color: var(--color-off-white);
+    padding: 1rem;
+    border-radius: 4px;
+    margin-top: 2rem;
+}
+
+.article {
+    margin-bottom: 1.5rem;
+}
+
+.article img {
+    max-width: 100%;
+    height: auto;
+    margin-bottom: 1rem;
+}
+
+.article pre {
+    background-color: #f0f0f0;
+    padding: 0.5rem;
+    border-radius: 4px;
+    overflow-x: auto;
+}
+
+.more-content {
+    display: none;
+    margin-top: 1rem;
+}
+
+.more-button {
+    background-color: #555;
+    color: #fff;
+    padding: 0.3rem 0.6rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.more-button:hover {
+    background-color: #333;
+}
+
+#overall-score {
+    background-color: var(--color-off-white);
+    padding: 1rem;
+    border-radius: 4px;
+    margin-top: 2rem;
+}
+
+footer {
+    text-align: center;
+    padding: 1rem;
+    background-color: var(--color-primary);
+    color: var(--color-off-white);
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+}
+
+@media (max-width: 600px) {
+    main {
+        padding: 1rem;
+    }
+}

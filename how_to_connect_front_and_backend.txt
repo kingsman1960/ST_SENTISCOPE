@@ -1,0 +1,122 @@
+First, we need to modify the Streamlit app to expose an API endpoint. Streamlit doesn't natively support API endpoints, so we'll use the `streamlit-server-state` library to achieve this.
+
+1. Install the required library:
+   ```
+   pip install streamlit-server-state
+   ```
+
+2. Modify your ST_SENTISCOPE.py:
+
+```python
+import streamlit as st
+from streamlit_server_state import server_state, server_state_lock
+import json
+
+# Your existing Streamlit app code here...
+
+def analyze_sentiment(text):
+    # Your sentiment analysis logic here
+    # This is a placeholder implementation
+    return {
+        "sentiment": "positive",
+        "confidence": 0.8,
+        "text": text
+    }
+
+# Add this function to handle API requests
+def api_analyze(text):
+    with server_state_lock["analysis"]:
+        if "analysis" not in server_state:
+            server_state.analysis = {}
+        result = analyze_sentiment(text)
+        server_state.analysis = result
+    return json.dumps(result)
+
+# Add this to your Streamlit app
+if st.sidebar.button('Enable API'):
+    st.sidebar.write('API is enabled. Endpoint: /analyze')
+    if "enable_api" not in st.session_state:
+        st.session_state.enable_api = True
+
+# Your existing Streamlit app UI code here...
+```
+
+# Step 2: Create a FastAPI wrapper for Streamlit
+
+Since Streamlit doesn't natively support API endpoints, we'll create a FastAPI wrapper to expose our Streamlit app's functionality via API.
+
+1. Install FastAPI and uvicorn:
+   ```
+   pip install fastapi uvicorn
+   ```
+
+2. Create a new file named `api_wrapper.py` in your backend directory:
+
+```python
+from fastapi import FastAPI, BackgroundTasks
+import uvicorn
+import subprocess
+import time
+
+app = FastAPI()
+
+@app.post("/analyze")
+async def analyze(text: str, background_tasks: BackgroundTasks):
+    from ST_SENTISCOPE import api_analyze
+    result = api_analyze(text)
+    return result
+
+def run_streamlit():
+    subprocess.run(["streamlit", "run", "ST_SENTISCOPE.py"])
+
+@app.on_event("startup")
+async def startup_event():
+    background_tasks = BackgroundTasks()
+    background_tasks.add_task(run_streamlit)
+    time.sleep(5)  # Give Streamlit some time to start
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+```
+
+# Step 3: Modify the Flask Frontend
+
+Now, update your Flask frontend to communicate with the FastAPI wrapper.
+
+1. Modify your `app.py`:
+
+```python
+from flask import Flask, render_template, request, jsonify
+import requests
+
+app = Flask(__name__)
+
+API_URL = "http://localhost:8000/analyze"
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/analyze', methods=['POST'])
+def analyze():
+    text = request.form['text']
+    response = requests.post(API_URL, json={"text": text})
+    return jsonify(response.json())
+
+if __name__ == '__main__':
+    app.run(debug=True)
+```
+
+# Step 4: Running the Connected System
+
+1. Start the FastAPI wrapper (which also starts Streamlit):
+   ```
+   python backend/api_wrapper.py
+   ```
+
+2. In a separate terminal, start the Flask frontend:
+   ```
+   python frontend/app.py
+   ```
+
+3. Access the frontend at `http://localhost:5000` and use it to send analysis requests to the backend.
