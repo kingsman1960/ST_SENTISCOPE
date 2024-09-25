@@ -1,43 +1,56 @@
 # backend/news_fetcher.py
 
 import requests
-import feedparser
+from datetime import datetime, timedelta
 
-class NewsFetcher:
-    def __init__(self):
-        # Define base Google News RSS feed URL
-        self.base_rss_url = 'https://news.google.com/rss/search?q={}'
+class News_Fetcher:
+    def __init__(self, api_key):
+        self.api_key = api_key
+        self.base_url = 'https://newsapi.org/v2/everything'
+        self.trusted_sources = [
+            'reuters.com', 'bloomberg.com', 'cnbc.com', 'wsj.com', 'ft.com',
+            'marketwatch.com', 'fool.com', 'investing.com', 'seekingalpha.com'
+        ]
     
     def fetch_news_by_ticker(self, ticker):
         """
-        Fetch news articles for a given ticker using Google News RSS feeds.
+        Fetch news articles for a given ticker using NewsAPI.
         Returns a list of articles with relevant information.
         """
-        rss_url = self.base_rss_url.format(ticker)
+        financial_keywords = "finance OR market OR stock OR economy OR investment"
+        query = f"{ticker} AND ({financial_keywords})"
+        domains = ','.join(self.trusted_sources)
+        
+        params = {
+            'q': query,
+            'domains': domains,
+            'apiKey': self.api_key,
+            'language': 'en',
+            'sortBy': 'relevancy',
+            'pageSize': 10,
+            'from': (datetime.now() - timedelta(days=30)).isoformat()  # Last 30 days
+        }
+        
         try:
-            response = requests.get(rss_url)
+            response = requests.get(self.base_url, params=params)
             response.raise_for_status()
-            feed = feedparser.parse(response.content)
+            data = response.json()
+            
             articles = []
-            for entry in feed.entries[:5]:  # Fetch latest 5 articles per ticker
-                article = {
-                    'title': entry.title,
-                    'source': entry.source.title if 'source' in entry else 'Google News',
-                    'description': entry.summary,
-                    'urlToImage': self.extract_image_url(entry),
-                    'link': entry.link
-                }
-                articles.append(article)
+            for article in data.get('articles', []):
+                articles.append({
+                    'title': article.get('title'),
+                    'source': article.get('source', {}).get('name', 'Unknown'),
+                    'description': article.get('description'),
+                    'urlToImage': article.get('urlToImage'),
+                    'link': article.get('url'),
+                    'publishedAt': article.get('publishedAt')
+                })
             return articles
         except requests.RequestException as e:
             print(f"Error fetching news for ticker '{ticker}': {e}")
             return []
-    
-    def extract_image_url(self, entry):
-        """
-        Extract image URL from the RSS entry if available.
-        Google News RSS may not always provide images; this is a placeholder.
-        """
-        # Google News RSS feeds typically do not include images.
-        # You might need to scrape the article page or use another source to get images.
-        return ''
+
+# Usage example:
+# news_fetcher = News_Fetcher('your_newsapi_key_here')
+# news = news_fetcher.fetch_news_by_ticker('AAPL')

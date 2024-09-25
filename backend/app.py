@@ -1,8 +1,8 @@
 # backend/app.py
 
 from flask import Flask, render_template, request, jsonify
-from news_fetcher import NewsFetcher
-from entity_extractor import EntityExtractor
+from backend.news_fetcher import News_Fetcher
+from backend.entity_extractor import EntityExtractor
 import os
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
@@ -144,7 +144,8 @@ class SentimentAnalyzer:
         return {'sentiment': sentiment, 'score': score}
 
 # Initialize backend modules
-news_fetcher = NewsFetcher()
+news_api_key = '0cf5b245641b420ba8e54eb209004b6e'  # Replace with your actual NewsAPI key
+news_fetcher = News_Fetcher(news_api_key)
 sentiment_analyzer = SentimentAnalyzer()
 entity_extractor = EntityExtractor(sentiment_analyzer.flair_sentiment_model)
 
@@ -172,7 +173,6 @@ def analyze_sector():
     sector = request.form.get('sector')
     if not sector:
         return jsonify({"error": "No sector provided."}), 400
-
     if sector == 'Manually Paste Article':
         return jsonify({"error": "Please select a valid sector."}), 400
 
@@ -195,7 +195,7 @@ def analyze_sector():
     for article in all_articles[:5]:
         description = article.get('description', '')
         if not description:
-            description = article.get('content', '')  
+            continue  # Skip articles without a description
 
         # Performing sentiment analysis
         sentiments = sentiment_analyzer.analyze_sentiments(description)
@@ -209,6 +209,7 @@ def analyze_sector():
             'description': description,
             'urlToImage': article.get('urlToImage', ''),
             'link': article.get('link', ''),
+            'publishedAt': article.get('publishedAt', ''),
             'average_sentiments': sentiments['average_sentiments'],
             'detailed_sentiments': sentiments['detailed_sentiments'],
             'entities': entities
