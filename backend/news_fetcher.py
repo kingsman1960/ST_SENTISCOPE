@@ -9,7 +9,11 @@ class News_Fetcher:
         self.base_url = 'https://newsapi.org/v2/everything'
         self.trusted_sources = [
             'reuters.com', 'bloomberg.com', 'cnbc.com', 'wsj.com', 'ft.com',
-            'marketwatch.com', 'fool.com', 'investing.com', 'seekingalpha.com'
+            'marketwatch.com', 'seekingalpha.com',
+            'apnews.com', 'bbc.com', 'npr.org', 'nytimes.com', 'washingtonpost.com',
+            'economist.com', 'forbes.com', 'barrons.com',
+            'morningstar.com', 'businessinsider.com', 'thestreet.com', 'zacks.com',  'nasdaq.com', 'foxbusiness.com', 'money.cnn.com',
+            'financial-times.com', 'aljazeera.com', 'theguardian.com', 'abc.net.au'
         ]
     
     def fetch_news_by_ticker(self, ticker):
@@ -17,7 +21,13 @@ class News_Fetcher:
         Fetch news articles for a given ticker using NewsAPI.
         Returns a list of articles with relevant information.
         """
-        financial_keywords = "finance OR market OR stock OR economy OR investment"
+        financial_keywords = (
+            "finance OR market OR stock OR economy OR investment OR "
+            "financials OR earnings OR revenue OR profit OR loss OR "
+            "dividends OR trading OR portfolio OR hedge OR risk OR "
+            "inflation OR interest rates OR monetary policy OR fiscal policy OR "
+            "economic growth OR GDP OR recession OR bull market OR bear market"
+        )
         query = f"{ticker} AND ({financial_keywords})"
         domains = ','.join(self.trusted_sources)
         
@@ -27,7 +37,7 @@ class News_Fetcher:
             'apiKey': self.api_key,
             'language': 'en',
             'sortBy': 'relevancy',
-            'pageSize': 10,
+            'pageSize': 5,
             'from': (datetime.now() - timedelta(days=30)).isoformat()  # Last 30 days
         }
         

@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const overallScoreDiv = document.getElementById('overall-score');
     const overallSentimentSpan = document.getElementById('overall-sentiment');
 
-    // Populate the sector dropdown
+        // Populate the sector dropdown
     fetch('/get_sectors')
         .then(response => response.json())
         .then(sectors => {
@@ -15,7 +15,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 option.value = sector;
                 option.textContent = sector;
                 sectorSelect.appendChild(option);
+                // Add onchange event listener to the sector select element
+                sectorSelect.addEventListener('change', getSectorInfo);
             });
+            
         })
         .catch(error => {
             console.error('Error fetching sectors:', error);
@@ -189,6 +192,51 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     }
+
+    function getSectorInfo() {
+        var sector = document.getElementById('sector-select').value;
+        if (sector !== 'Manually Paste Article') {
+            fetch('/get_sector_info', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'sector=' + encodeURIComponent(sector)
+            })
+            .then(response => response.json())
+            .then(response => {
+                var infoHtml = '<h3>Sector: ' + sector + '</h3>';
+                infoHtml += '<p><strong>Description:</strong> ' + response.description + '</p>';
+                infoHtml += '<p><strong>Constituents:</strong> ' + response.tickers.join(', ') + '</p>';
+                
+                // Create a modal or popup to display the information
+                var modal = document.createElement('div');
+                modal.innerHTML = infoHtml;
+                modal.style.position = 'fixed';
+                modal.style.left = '50%';
+                modal.style.top = '50%';
+                modal.style.transform = 'translate(-50%, -50%)';
+                modal.style.backgroundColor = 'white';
+                modal.style.padding = '20px';
+                modal.style.border = '1px solid black';
+                modal.style.zIndex = '1000';
+                
+                // Add a close button
+                var closeButton = document.createElement('button');
+                closeButton.innerHTML = 'Close';
+                closeButton.onclick = function() {
+                    document.body.removeChild(modal);
+                };
+                modal.appendChild(closeButton);
+                
+                document.body.appendChild(modal);
+            })
+            .catch(error => {
+                console.log('Error:', error);
+            });
+        }
+    }
+
 
     // Handle errors during fetch
     function handleError(error) {
