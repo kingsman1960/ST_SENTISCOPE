@@ -151,11 +151,16 @@ entity_extractor = EntityExtractor(sentiment_analyzer.flair_sentiment_model)
 
 # sector tickers
 SECTOR_TICKERS = {
-    'Banking': ['JPM', 'BAC', 'WFC', 'C', 'GS'],
-    'Technology': ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META'], 
-    'Healthcare': ['JNJ', 'PFE', 'MRK', 'ABT', 'TMO'],
-    'Energy': ['XOM', 'CVX', 'COP', 'SLB', 'TOT'],
-    'Retail': ['WMT', 'TGT', 'AMZN', 'COST', 'LOW']
+    'Banking': ['JPM', 'BAC', 'WFC', 'C', 'GS', 'MS', 'USB', 'PNC', 'TFC', 'SCHW'],
+    'Technology': ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'NVDA', 'TSLA', 'ADBE', 'CRM', 'INTC'],
+    'Healthcare': ['JNJ', 'PFE', 'MRK', 'ABT', 'TMO', 'UNH', 'ABBV', 'LLY', 'BMY', 'AMGN'],
+    'Energy': ['XOM', 'CVX', 'COP', 'SLB', 'TOT', 'BP', 'RDS.A', 'EOG', 'PXD', 'PSX'],
+    'Retail': ['WMT', 'TGT', 'AMZN', 'COST', 'LOW', 'HD', 'KR', 'DG', 'DLTR', 'ROST'],
+    'Telecommunications': ['T', 'VZ', 'TMUS', 'CMCSA', 'CHTR', 'VOD', 'AMX', 'BCE', 'TEF', 'ORAN'],
+    'Automotive': ['TM', 'TSLA', 'F', 'GM', 'HMC', 'VWAGY', 'BMW.DE', 'DAI.DE', 'STLA', 'RACE'],
+    'Aerospace & Defense': ['BA', 'LMT', 'RTX', 'NOC', 'GD', 'AIR.PA', 'HEI', 'TDG', 'COL', 'TXT'],
+    'Consumer Goods': ['PG', 'KO', 'PEP', 'MDLZ', 'UL', 'CL', 'EL', 'NKE', 'NSRGY', 'KMB'],
+    'Real Estate': ['AMT', 'PLD', 'CCI', 'EQIX', 'PSA', 'SPG', 'WELL', 'AVB', 'EQR', 'DLR']
 }
 
 @app.route('/')
@@ -288,6 +293,35 @@ def calculate_overall_sentiment(articles):
         overall_sentiment = "Very Negative"
 
     return overall_sentiment
+
+@app.route('/get_sector_info', methods=['POST'])
+def get_sector_info():
+    sector = request.form.get('sector')
+    if not sector:
+        return jsonify({"error": "No sector provided."}), 400
+    
+    tickers = SECTOR_TICKERS.get(sector, [])
+    if not tickers:
+        return jsonify({"error": "No tickers found for the selected sector."}), 404
+    
+    # Add brief descriptions of how each sector works
+    sector_descriptions = {
+        'Banking': "The banking sector provides financial services to individuals and businesses, including loans, deposits, and investment products.",
+        'Technology': "The technology sector develops and produces electronics, software, computers, and related products and services.",
+        'Healthcare': "The healthcare sector includes companies that provide medical services, manufacture medical equipment, or develop pharmaceuticals.",
+        'Energy': "The energy sector comprises companies involved in the production and supply of energy, including oil, gas, and renewable energy sources.",
+        'Retail': "The retail sector consists of companies that sell goods directly to consumers through various channels.",
+        'Telecommunications': "The telecommunications sector provides communication services, including phone, internet, and television services.",
+        'Automotive': "The automotive sector involves the design, development, manufacturing, marketing, and selling of motor vehicles.",
+        'Aerospace & Defense': "The aerospace & defense sector produces aircraft, space vehicles, defense equipment, and related services.",
+        'Consumer Goods': "The consumer goods sector manufactures products purchased for consumption by the average consumer.",
+        'Real Estate': "The real estate sector involves the buying, selling, renting, and development of land and buildings."
+    }
+    
+    return jsonify({
+        "tickers": tickers,
+        "description": sector_descriptions.get(sector, "No description available.")
+    })
 
 if __name__ == '__main__':
     # Run the Flask app
