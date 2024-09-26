@@ -144,7 +144,7 @@ class SentimentAnalyzer:
         return {'sentiment': sentiment, 'score': score}
 
 # Initialize backend modules
-news_api_key = '0cf5b245641b420ba8e54eb209004b6e'  # Replace with your actual NewsAPI key
+news_api_key = '84224ee4da77492796472a5a06270841'  # Replace with your actual NewsAPI key
 news_fetcher = News_Fetcher(news_api_key)
 sentiment_analyzer = SentimentAnalyzer()
 entity_extractor = EntityExtractor(sentiment_analyzer.flair_sentiment_model)
@@ -157,10 +157,10 @@ SECTOR_TICKERS = {
     'Energy': ['XOM', 'CVX', 'COP', 'SLB', 'TOT', 'BP', 'RDS.A', 'EOG', 'PXD', 'PSX'],
     'Retail': ['WMT', 'TGT', 'AMZN', 'COST', 'LOW', 'HD', 'KR', 'DG', 'DLTR', 'ROST'],
     'Telecommunications': ['T', 'VZ', 'TMUS', 'CMCSA', 'CHTR', 'VOD', 'AMX', 'BCE', 'TEF', 'ORAN'],
-    'Automotive': ['TM', 'TSLA', 'F', 'GM', 'HMC', 'VWAGY', 'BMW.DE', 'DAI.DE', 'STLA', 'RACE'],
+    'Automotive': ['TM', 'TSLA', 'F', 'GM', 'HMC', 'VWAGY', 'BMW.DE', 'STLA', 'RACE'],
     'Aerospace & Defense': ['BA', 'LMT', 'RTX', 'NOC', 'GD', 'AIR.PA', 'HEI', 'TDG', 'COL', 'TXT'],
     'Consumer Goods': ['PG', 'KO', 'PEP', 'MDLZ', 'UL', 'CL', 'EL', 'NKE', 'NSRGY', 'KMB'],
-    'Real Estate': ['AMT', 'PLD', 'CCI', 'EQIX', 'PSA', 'SPG', 'WELL', 'AVB', 'EQR', 'DLR']
+    'Real Estate': ['AMT', 'PLD', 'CCI', 'EQIX', 'PSA', 'SPG', 'WELL', 'AVB', 'EQR', 'DLR'],
 }
 
 @app.route('/')
@@ -197,7 +197,7 @@ def analyze_sector():
 
     # 5 most relevant articles per sector
     analyzed_articles = []
-    for article in all_articles[:5]:
+    for article in all_articles[:14]:
         description = article.get('description', '')
         if not description:
             continue  # Skip articles without a description
