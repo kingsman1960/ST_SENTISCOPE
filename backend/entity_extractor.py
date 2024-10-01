@@ -1,5 +1,6 @@
 import nltk
 from flair.data import Sentence
+from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
 
 class EntityExtractor:
     def __init__(self, flair_ner_model):
@@ -9,14 +10,20 @@ class EntityExtractor:
         nltk.download('averaged_perceptron_tagger')
         nltk.download('maxent_ne_chunker')
         nltk.download('words')
+        
+        # Initialize SEC-BERT-BASE
+        self.sec_bert_tokenizer = AutoTokenizer.from_pretrained("nlpaueb/sec-bert-base")
+        self.sec_bert_model = AutoModelForTokenClassification.from_pretrained("nlpaueb/sec-bert-base")
+        self.sec_bert_nlp = pipeline("ner", model=self.sec_bert_model, tokenizer=self.sec_bert_tokenizer, aggregation_strategy="simple")
 
     def extract_entities(self, text):
         """
-        Extracting named entities using both Flair and NLTK and returning a dictionary with entities.
+        Extracting named entities using Flair, NLTK, and SEC-BERT-BASE and returning a dictionary with entities.
         """
         entities = {}
         entities['Flair'] = self.extract_entities_flair(text)
         entities['NLTK'] = self.extract_entities_nltk(text)
+        entities['SEC-BERT'] = self.extract_entities_sec_bert(text)
         return entities
 
     def extract_entities_flair(self, text):
@@ -38,3 +45,40 @@ class EntityExtractor:
                 entity_label = subtree.label()
                 entities.append({'entity': entity_text, 'label': entity_label})
         return entities
+
+    def extract_entities_sec_bert(self, text):
+        ner_results = self.sec_bert_nlp(text)
+        entities = []
+    
+        # Define a mapping for SEC-BERT entity labels
+        label_mapping = {
+            'ORG': 'Organization',
+            'PER': 'Person',
+            'LOC': 'Location',
+            'MISC': 'Miscellaneous',
+            'GPE': 'Geopolitical Entity',
+            'DATE': 'Date',
+            'MONEY': 'Money',
+            'PERCENT': 'Percentage',
+            'TIME': 'Time',
+            'CARDINAL': 'Cardinal Number',
+            'ORDINAL': 'Ordinal Number',
+            'QUANTITY': 'Quantity',
+            'PRODUCT': 'Product',
+            'EVENT': 'Event',
+            'NORP': 'Nationality or Religious or Political Group',
+            'FAC': 'Facility',
+            'WORK_OF_ART': 'Work of Art',
+            'LAW': 'Law',
+            'LANGUAGE': 'Language'
+        }
+
+        for entity in ner_results:
+        # Map the entity label to a more descriptive one, or keep the original if not in the mapping
+            mapped_label = label_mapping.get(entity['entity_group'], entity['entity_group'])
+            entities.append({
+                'entity': entity['word'],
+                'label': mapped_label
+            })
+    
+            return entities
