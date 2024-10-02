@@ -4,7 +4,7 @@ from flask import Flask, render_template, request, jsonify
 from backend.news_fetcher import News_Fetcher
 from backend.entity_extractor import EntityExtractor
 import os
-from transformers import DistilBertTokenizer, DistilBertForSequenceClassification, AutoTokenizer, AutoModelForSequenceClassification
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
 from flair.models import TextClassifier
 from flair.data import Sentence
@@ -25,10 +25,10 @@ class SentimentAnalyzer:
         self.finbert_tokenizer = AutoTokenizer.from_pretrained("ProsusAI/finbert")
         self.finbert_model = AutoModelForSequenceClassification.from_pretrained("ProsusAI/finbert")
 
-        # Load DistilBERT trained on Financial PhraseBank
-        print("Loading DistilBERT Financial PhraseBank model...")
-        self.distilbert_financial_tokenizer = DistilBertTokenizer.from_pretrained("./distilbert-financial-sentiment")
-        self.distilbert_financial_model = DistilBertForSequenceClassification.from_pretrained("./distilbert-financial-sentiment")
+        # Load ESG-BERT
+        print("Loading ESG-BERT model...")
+        self.esgbert_tokenizer = AutoTokenizer.from_pretrained("nbroad/ESG-BERT")
+        self.esgbert_model = AutoModelForSequenceClassification.from_pretrained("nbroad/ESG-BERT")
 
         # Load FinBERT-Tone
         print("Loading FinBERT-Tone model...")
@@ -39,55 +39,32 @@ class SentimentAnalyzer:
         print("Loading Flair Sentiment model...")
         self.flair_sentiment_model = TextClassifier.load('en-sentiment')
 
-    
-
-    def analyze_sentiment_finbert(self, text):
-        inputs = self.finbert_tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512)
-        with torch.no_grad():
-            outputs = self.finbert_model(**inputs)
-            probabilities = torch.nn.functional.softmax(outputs.logits, dim=1)
-            sentiment_scores = probabilities[0].tolist()
-        labels = ['Negative', 'Neutral', 'Positive']
-        return {label: round(score, 4) for label, score in zip(labels, sentiment_scores)}
-
-    def analyze_sentiment_distilbert_financial(self, text):
-        inputs = self.distilbert_financial_tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512)
-        with torch.no_grad():
-            outputs = self.distilbert_financial_model(**inputs)
-            probabilities = torch.nn.functional.softmax(outputs.logits, dim=1)
-            sentiment_scores = probabilities[0].tolist()
-        labels = ['Negative', 'Neutral', 'Positive']
-        return {label: round(score, 4) for label, score in zip(labels, sentiment_scores)}
-
-    def analyze_sentiment_finbert_tone(self, text):
-        inputs = self.finbert_tone_tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512)
-        with torch.no_grad():
-            outputs = self.finbert_tone_model(**inputs)
-            probabilities = torch.nn.functional.softmax(outputs.logits, dim=1)
-            sentiment_scores = probabilities[0].tolist()
-        labels = ['Negative', 'Neutral', 'Positive']
-        return {label: round(score, 4) for label, score in zip(labels, sentiment_scores)}
-
-    def analyze_sentiment_flair(self, text):
-        sentence = Sentence(text)
-        self.flair_sentiment_model.predict(sentence)
-        sentiment = sentence.labels[0].value
-        score = round(sentence.labels[0].score, 4)
-        return {'sentiment': sentiment, 'score': score}
-    
     def analyze_sentiments(self, text):
+        """
+        Performs multiple sentiment analyses on the given text and returns a dictionary with individual and average sentiment scores.
+        """
         sentiments = {}
+
+        # FinBERT Sentiment
         sentiments['FinBERT'] = self.analyze_sentiment_finbert(text)
-        sentiments['DistilBERT-Financial'] = self.analyze_sentiment_distilbert_financial(text)
+
+        # ESG-BERT Sentiment
+        sentiments['ESG-BERT'] = self.analyze_sentiment_esgbert(text)
+
+        # FinBERT-Tone Sentiment
         sentiments['FinBERT-Tone'] = self.analyze_sentiment_finbert_tone(text)
+
+        # Flair Sentiment
         sentiments['Flair'] = self.analyze_sentiment_flair(text)
-        
+
+        # Calculate average sentiments
         average_sentiments = self.calculate_average_sentiments(sentiments)
+
         return {
             'average_sentiments': average_sentiments,
             'detailed_sentiments': sentiments
         }
-    
+
     def calculate_average_sentiments(self, sentiments):
         """
         Calculate the average of 'Negative', 'Neutral', 'Positive' sentiments from multiple models.
@@ -98,7 +75,7 @@ class SentimentAnalyzer:
         count = 0
 
         for model, scores in sentiments.items():
-            if model in ['FinBERT', 'FinBERT-Tone', 'DistilBERT-Financial']:
+            if model in ['FinBERT', 'ESG-BERT', 'FinBERT-Tone']:
                 total_neg += scores.get('Negative', 0)
                 total_neu += scores.get('Neutral', 0)
                 total_pos += scores.get('Positive', 0)
@@ -131,6 +108,40 @@ class SentimentAnalyzer:
             'Positive': round(average_pos, 4),
             'Overall_Sentiment': overall_sentiment
         }
+
+    def analyze_sentiment_finbert(self, text):
+        inputs = self.finbert_tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512)
+        with torch.no_grad():
+            outputs = self.finbert_model(**inputs)
+            probabilities = torch.nn.functional.softmax(outputs.logits, dim=1)
+            sentiment_scores = probabilities[0].tolist()
+        labels = ['Negative', 'Neutral', 'Positive']
+        return {label: round(score, 4) for label, score in zip(labels, sentiment_scores)}
+
+    def analyze_sentiment_esgbert(self, text):
+        inputs = self.esgbert_tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512)
+        with torch.no_grad():
+            outputs = self.esgbert_model(**inputs)
+            probabilities = torch.nn.functional.softmax(outputs.logits, dim=1)
+            sentiment_scores = probabilities[0].tolist()
+        labels = ['Negative', 'Neutral', 'Positive']
+        return {label: round(score, 4) for label, score in zip(labels, sentiment_scores)}
+
+    def analyze_sentiment_finbert_tone(self, text):
+        inputs = self.finbert_tone_tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512)
+        with torch.no_grad():
+            outputs = self.finbert_tone_model(**inputs)
+            probabilities = torch.nn.functional.softmax(outputs.logits, dim=1)
+            sentiment_scores = probabilities[0].tolist()
+        labels = ['Negative', 'Neutral', 'Positive']
+        return {label: round(score, 4) for label, score in zip(labels, sentiment_scores)}
+
+    def analyze_sentiment_flair(self, text):
+        sentence = Sentence(text)
+        self.flair_sentiment_model.predict(sentence)
+        sentiment = sentence.labels[0].value
+        score = round(sentence.labels[0].score, 4)
+        return {'sentiment': sentiment, 'score': score}
 
 # Initialize backend modules
 news_api_key = '84224ee4da77492796472a5a06270841'  # Replace with your actual NewsAPI key
