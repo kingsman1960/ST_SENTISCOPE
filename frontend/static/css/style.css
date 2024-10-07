@@ -125,7 +125,21 @@ button:hover {
     border-radius: 4px;
     margin-top: 2rem;
 }
-
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+}
+ 
+.pagination button {
+    margin: 0 10px;
+    padding: 10px 20px;
+}
+ 
+.pagination span {
+    font-size: 16px;
+}
 footer {
     text-align: center;
     padding: 1rem;

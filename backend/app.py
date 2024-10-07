@@ -156,7 +156,7 @@ class SentimentAnalyzer:
         }
 
 # Initialize backend modules
-news_api_key = "84224ee4da77492796472a5a06270841"#"0cf5b245641b420ba8e54eb209004b6e"#'84224ee4da77492796472a5a06270841'  # Replace with your actual NewsAPI key
+news_api_key = "eb19cbd4504a40c99bf9d76563dd423e"#"0cf5b245641b420ba8e54eb209004b6e"#'84224ee4da77492796472a5a06270841'  # Replace with your actual NewsAPI key
 news_fetcher = News_Fetcher(news_api_key)
 sentiment_analyzer = SentimentAnalyzer()
 entity_extractor = EntityExtractor(sentiment_analyzer.flair_sentiment_model)
