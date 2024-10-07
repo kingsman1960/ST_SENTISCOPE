@@ -39,6 +39,11 @@ class SentimentAnalyzer:
         print("Loading Flair Sentiment model...")
         self.flair_sentiment_model = TextClassifier.load('en-sentiment')
 
+        # Load SEC Bert Finetuned
+        print("Loading SEC Bert Finetuned model...")
+        self.sec_finetuned_bert_tokenizer = AutoTokenizer.from_pretrained("nickmuchi/sec-bert-finetuned-finance-classification")
+        self.sec_finetuned_bert_model = AutoModelForSequenceClassification.from_pretrained("nickmuchi/sec-bert-finetuned-finance-classification")
+
     
 
     def analyze_sentiment_finbert(self, text):
@@ -67,19 +72,29 @@ class SentimentAnalyzer:
             sentiment_scores = probabilities[0].tolist()
         labels = ['Negative', 'Neutral', 'Positive']
         return {label: round(score, 4) for label, score in zip(labels, sentiment_scores)}
-
+    
     def analyze_sentiment_flair(self, text):
         sentence = Sentence(text)
         self.flair_sentiment_model.predict(sentence)
         sentiment = sentence.labels[0].value
         score = round(sentence.labels[0].score, 4)
         return {'sentiment': sentiment, 'score': score}
+
+    def analyze_sentiment_secbert_finetuned(self, text):
+        inputs = self.sec_finetuned_bert_tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512)
+        with torch.no_grad():
+            outputs = self.sec_finetuned_bert_model(**inputs)
+            probabilities = torch.nn.functional.softmax(outputs.logits, dim=1)
+            sentiment_scores = probabilities[0].tolist()
+        labels = ['Negative', 'Neutral', 'Positive']
+        return {label: score for label, score in zip(labels, sentiment_scores)}
     
     def analyze_sentiments(self, text):
         sentiments = {}
         sentiments['FinBERT'] = self.analyze_sentiment_finbert(text)
         sentiments['DistilBERT-Financial'] = self.analyze_sentiment_distilbert_financial(text)
         sentiments['FinBERT-Tone'] = self.analyze_sentiment_finbert_tone(text)
+        sentiments['SEC_BERT_Finetuned'] = self.analyze_sentiment_secbert_finetuned(text)
         sentiments['Flair'] = self.analyze_sentiment_flair(text)
         
         average_sentiments = self.calculate_average_sentiments(sentiments)
@@ -87,6 +102,8 @@ class SentimentAnalyzer:
             'average_sentiments': average_sentiments,
             'detailed_sentiments': sentiments
         }
+
+    
     
     def calculate_average_sentiments(self, sentiments):
         """
@@ -223,6 +240,7 @@ def analyze_article():
     article_text = request.form.get('article')
     if not article_text:
         return jsonify({"error": "No article text provided."}), 400
+
 
     # Perform sentiment analysis
     sentiments = sentiment_analyzer.analyze_sentiments(article_text)
