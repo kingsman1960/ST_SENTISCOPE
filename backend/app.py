@@ -115,7 +115,7 @@ class SentimentAnalyzer:
         count = 0
 
         for model, scores in sentiments.items():
-            if model in ['FinBERT', 'FinBERT-Tone', 'DistilBERT-Financial']:
+            if model in [ 'FinBERT-Tone', 'DistilBERT-Financial', 'SEC_BERT_Finetuned']:
                 total_neg += scores.get('Negative', 0)
                 total_neu += scores.get('Neutral', 0)
                 total_pos += scores.get('Positive', 0)
@@ -128,16 +128,21 @@ class SentimentAnalyzer:
         average_neu = total_neu / count
         average_pos = total_pos / count
 
-        # The overall sentiment score is determined based on average_pos and average_neg
-        overall_score = average_pos - average_neg  # Simple sentiment score
+        # Calculate a weighted overall score
+        overall_score = (0.6 * average_pos) - (0.4 * average_neg)
+    
+        # Adjust the score based on the neutral sentiment
+        neutral_factor = 1 - (average_neu * 0.5)
+        adjusted_score = overall_score * neutral_factor
 
-        if overall_score >= 0.6:
+        # Determine the overall sentiment based on the adjusted score
+        if adjusted_score >= 0.5:
             overall_sentiment = "Very Positive"
-        elif 0.2 <= overall_score < 0.6:
+        elif 0.2 <= adjusted_score < 0.5:
             overall_sentiment = "Slightly Positive"
-        elif -0.2 < overall_score < 0.2:
+        elif -0.2 < adjusted_score < 0.2:
             overall_sentiment = "Neutral"
-        elif -0.6 < overall_score <= -0.2:
+        elif -0.5 < adjusted_score <= -0.2:
             overall_sentiment = "Slightly Negative"
         else:
             overall_sentiment = "Very Negative"
@@ -146,11 +151,12 @@ class SentimentAnalyzer:
             'Negative': round(average_neg, 4),
             'Neutral': round(average_neu, 4),
             'Positive': round(average_pos, 4),
+            'Overall_Score': round(adjusted_score, 4),
             'Overall_Sentiment': overall_sentiment
         }
 
 # Initialize backend modules
-news_api_key = '84224ee4da77492796472a5a06270841'  # Replace with your actual NewsAPI key
+news_api_key = "84224ee4da77492796472a5a06270841"#"0cf5b245641b420ba8e54eb209004b6e"#'84224ee4da77492796472a5a06270841'  # Replace with your actual NewsAPI key
 news_fetcher = News_Fetcher(news_api_key)
 sentiment_analyzer = SentimentAnalyzer()
 entity_extractor = EntityExtractor(sentiment_analyzer.flair_sentiment_model)
@@ -163,7 +169,7 @@ SECTOR_TICKERS = {
     'Energy': ['XOM', 'CVX', 'COP', 'SLB', 'TOT', 'BP', 'RDS.A', 'EOG', 'PXD', 'PSX'],
     'Retail': ['WMT', 'TGT', 'AMZN', 'COST', 'LOW', 'HD', 'KR', 'DG', 'DLTR', 'ROST'],
     'Telecommunications': ['T', 'VZ', 'TMUS', 'CMCSA', 'CHTR', 'VOD', 'AMX', 'BCE', 'TEF', 'ORAN'],
-    'Automotive': ['TM', 'TSLA', 'F', 'GM', 'HMC', 'VWAGY', 'BMW.DE', 'STLA', 'RACE'],
+    'Automotive': ['TM', 'F', 'GM', 'HMC', 'VWAGY', 'BMW.DE', 'STLA', 'RACE'],
     'Aerospace & Defense': ['BA', 'LMT', 'RTX', 'NOC', 'GD', 'AIR.PA', 'HEI', 'TDG', 'COL', 'TXT'],
     'Consumer Goods': ['PG', 'KO', 'PEP', 'MDLZ', 'UL', 'CL', 'EL', 'NKE', 'NSRGY', 'KMB'],
     'Real Estate': ['AMT', 'PLD', 'CCI', 'EQIX', 'PSA', 'SPG', 'WELL', 'AVB', 'EQR', 'DLR'],
@@ -203,7 +209,7 @@ def analyze_sector():
 
     # 5 most relevant articles per sector
     analyzed_articles = []
-    for article in all_articles[:14]:
+    for article in all_articles[:20]:
         description = article.get('description', '')
         if not description:
             continue  # Skip articles without a description
@@ -285,16 +291,21 @@ def calculate_overall_sentiment(articles):
     average_neu = total_neu / count
     average_pos = total_pos / count
 
-    # Determine overall sentiment based on average_pos and average_neg
-    overall_score = average_pos - average_neg  # Simple sentiment score
+    # Calculate a weighted overall score
+    overall_score = (0.6 * average_pos) - (0.4 * average_neg)
+    
+    # Adjust the score based on the neutral sentiment
+    neutral_factor = 1 - (average_neu * 0.5)
+    adjusted_score = overall_score * neutral_factor
 
-    if overall_score >= 0.6:
+    # Determine overall sentiment based on the adjusted score
+    if adjusted_score >= 0.5:
         overall_sentiment = "Very Positive"
-    elif 0.2 <= overall_score < 0.6:
+    elif 0.2 <= adjusted_score < 0.5:
         overall_sentiment = "Slightly Positive"
-    elif -0.2 < overall_score < 0.2:
+    elif -0.2 < adjusted_score < 0.2:
         overall_sentiment = "Neutral"
-    elif -0.6 < overall_score <= -0.2:
+    elif -0.5 < adjusted_score <= -0.2:
         overall_sentiment = "Slightly Negative"
     else:
         overall_sentiment = "Very Negative"

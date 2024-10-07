@@ -14,7 +14,7 @@ class News_Fetcher:
             'apnews.com', 'bbc.com', 'npr.org', 'nytimes.com', 'washingtonpost.com',
             'economist.com', 'forbes.com', 'barrons.com',
             'morningstar.com', 'businessinsider.com', 'thestreet.com', 'zacks.com',  'nasdaq.com', 'foxbusiness.com', 'money.cnn.com',
-            'financial-times.com', 'aljazeera.com', 'theguardian.com', 'abc.net.au'
+            'financial-times.com', 'theguardian.com'
         ]
         self.last_request_time = 0
         self.request_interval = 1  # Minimum time between requests in seconds
